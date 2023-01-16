@@ -45,11 +45,16 @@ export async function adaptMessage(bot: DiscourseBot, event: Event, result: Univ
             break
         }
       } else {
-        content += node.value
+        content += node.value.replace('\n', '')
       }
     },
     leave(node, parent, index) {
       if (node.type === SyntaxKind.Text) return
+      switch (node.name) {
+        case 'p':
+        case 'br':
+          content += '\n'
+      }
     },
   })
   result.content = content
