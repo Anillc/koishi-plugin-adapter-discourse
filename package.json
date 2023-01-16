@@ -1,0 +1,24 @@
+{
+  "name": "koishi-plugin-adapter-discourse",
+  "version": "1.0.0",
+  "description": "Discourse adapter for Koishi",
+  "main": "lib/index.js",
+  "repository": "https://github.com/Anillc/koishi-plugin-adapter-discourse.git",
+  "author": "Anillc <void@anillc.cn>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "koishi": "^4.11.2",
+    "@satorijs/satori": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.18",
+    "typescript": "^4.9.4",
+    "openapi-typescript": "^6.1.0"
+  },
+  "dependencies": {
+    "openapi-typescript-fetch": "^1.1.3"
+  }
+}
