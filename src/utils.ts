@@ -16,7 +16,7 @@ export async function adaptMessage(bot: DiscourseBot, event: Event, result: Univ
     result.channelId = post.topic_id.toString()
     result.guildId = result.channelId
   }
-  result.messageId = post.post_number.toString()
+  result.messageId = post.id.toString()
   result.userId = post.user_id.toString()
   result.timestamp = +new Date(post.created_at)
   result.author = {

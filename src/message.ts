@@ -10,7 +10,7 @@ export class DiscourseMessenger extends Messenger<DiscourseBot> {
       const session = this.bot.session()
       const topicId = +(this.guildId ? this.channelId : this.channelId.slice(8))
       const result = await this.bot.internal.replyPost(topicId, `<pre>${this.buffer}</pre>`, this.reply)
-      session.messageId = result.post_number.toString()
+      session.messageId = result.id.toString()
       this.buffer = ''
       this.reply = null
       this.results.push(session)
