@@ -18,8 +18,12 @@ export class Internal {
     return await this.http.post('/posts.json', { topic_id: topicId, raw, reply_to_post_number: reply })
   }
 
-  async getPost(id: string) {
-    return await this.http.get(`/posts/${id}.json`)
+  async getPost(postId: string) {
+    return await this.http.get(`/posts/${postId}.json`)
+  }
+
+  async getPosts(topicId: string) {
+    return await this.http.get(`/t/${topicId}/posts.json`)
   }
 
   async deletePost(id: string) {
@@ -38,11 +42,11 @@ export class Internal {
     return await this.http.get(`/t/${id}.json`)
   }
 
-  async upload(buffer: ArrayBuffer) {
+  async upload(buffer: ArrayBuffer, filename = 'file') {
     const form = new FormData()
     form.append('type', 'composer')
     form.append('synchronous', 'true')
-    form.append('file', Buffer.from(buffer), 'avatar.jpg')
+    form.append('file', Buffer.from(buffer), filename)
     return await this.http.post('/uploads.json', form, {
       headers: form.getHeaders(),
     })

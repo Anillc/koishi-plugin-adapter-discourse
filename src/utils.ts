@@ -1,10 +1,14 @@
 import { Session, Universal, defineProperty, hyphenate, segment } from '@satorijs/satori'
+import { SyntaxKind, parse, walk } from 'html5parser'
 import { DiscourseBot } from './bot'
 import { Event } from './types'
 
 export async function adaptMessage(bot: DiscourseBot, event: Event, result: Universal.Message = {}): Promise<Universal.Message> {
   const { post } = event
   if (post.topic_archetype === 'private_message') {
+    const topic = await bot.internal.getTopic(post.topic_id.toString())
+    const { allowed_users } = topic.details
+    if (!allowed_users.find(each => each.id === +bot.userId)) return
     result.subtype = 'private'
     result.channelId = `private:${post.topic_id.toString()}`
   } else {
@@ -20,8 +24,35 @@ export async function adaptMessage(bot: DiscourseBot, event: Event, result: Univ
     username: post.username,
     nickname: post.display_username,
   }
-  // TODO
-  result.content = post.raw
+  if (post.reply_to_post_number) {
+    const posts = await bot.internal.getPosts(post.topic_id.toString())
+    const reply = posts.post_stream.posts[post.reply_to_post_number - 1]
+    result.quote = {}
+    await adaptMessage(bot, {
+      type: 'post',
+      subtype: 'post_created',
+      instance: bot.instance,
+      post: reply,
+    }, result.quote)
+  }
+  let content = ''
+  walk(parse(post.cooked, { setAttributeMap: true }), {
+    enter(node, parent, index) {
+      if (node.type === SyntaxKind.Tag) {
+        switch (node.name) {
+          case 'img':
+            content += `<image url="${node.attributeMap.src.value.value}"/>`
+            break
+        }
+      } else {
+        content += node.value
+      }
+    },
+    leave(node, parent, index) {
+      if (node.type === SyntaxKind.Text) return
+    },
+  })
+  result.content = content
   // result.content is not a setter if result is a Universal.Message
   result.elements ??= segment.parse(result.content)
   return result

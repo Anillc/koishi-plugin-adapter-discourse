@@ -9,7 +9,7 @@ export class DiscourseMessenger extends Messenger<DiscourseBot> {
     try {
       const session = this.bot.session()
       const topicId = +(this.guildId ? this.channelId : this.channelId.slice(8))
-      const result = await this.bot.internal.replyPost(topicId, this.buffer, this.reply)
+      const result = await this.bot.internal.replyPost(topicId, `<pre>${this.buffer}</pre>`, this.reply)
       session.messageId = result.post_number.toString()
       this.buffer = ''
       this.reply = null
@@ -21,34 +21,35 @@ export class DiscourseMessenger extends Messenger<DiscourseBot> {
   async visit(element: Element) {
     const { type, attrs, children } = element
     if (type === 'text') {
-      this.buffer += attrs.content.replace(/[\\*_`~|]/g, '\\$&')
+      this.buffer += attrs.content
     } else if (type === 'b' || type === 'strong') {
-      this.buffer += '**'
+      this.buffer += '<b>'
       await this.render(children)
-      this.buffer += '**'
+      this.buffer += '</b>'
     } else if (type === 'i' || type === 'em') {
-      this.buffer += '*'
+      this.buffer += '<i>'
       await this.render(children)
-      this.buffer += '*'
+      this.buffer += '</i>'
     } else if (type === 'u' || type === 'ins') {
-      this.buffer += '__'
+      this.buffer += '<u>'
       await this.render(children)
-      this.buffer += '__'
+      this.buffer += '</u>'
     } else if (type === 's' || type === 'del') {
-      this.buffer += '~~'
+      this.buffer += '<s>'
       await this.render(children)
-      this.buffer += '~~'
+      this.buffer += '</s>'
     } else if (type === 'code') {
-      this.buffer += '`'
+      this.buffer += '<code>'
       await this.render(children)
-      this.buffer += '`'
+      this.buffer += '</code>'
     } else if (type === 'a') {
-      this.buffer += '['
+      this.buffer += `<a href=${attrs.href}>`
       await this.render(children)
-      this.buffer += `](${attrs.href})`
+      this.buffer += `</a>`
     } else if (type === 'p') {
+      this.buffer += `</p>`
       await this.render(children)
-      this.buffer += '\n'
+      this.buffer += `</p>`
     } else if (type === 'at') {
       if (attrs.id) {
         this.buffer += ` @${attrs.id} `
@@ -66,7 +67,7 @@ export class DiscourseMessenger extends Messenger<DiscourseBot> {
         const upload = await this.bot.internal.upload(file.data)
         url = upload.url
       }
-      this.buffer += `![](${url})`
+      this.buffer += `<img src=${url}/>`
     } else if (type === 'quote') {
       this.reply = +attrs.id
     } else if (type === 'message') {
