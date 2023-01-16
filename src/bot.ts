@@ -1,8 +1,8 @@
-import { Bot, Context, Fragment, Schema, SendOptions } from 'koishi'
+import { Bot, Context, Fragment, Schema, SendOptions, Universal } from 'koishi'
 import { HttpAdapter } from './http'
 import { DiscourseMessenger } from './message'
 import { Internal } from './types'
-
+import { adaptMessage } from './utils'
 
 export class DiscourseBot extends Bot<DiscourseBot.Config> {
   endpoint: string
@@ -20,12 +20,65 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
     ctx.plugin(HttpAdapter, this)
   }
 
-  // TODO: init self
   async initialize() {
+    const self = await this.getSelf()
+    if (!self) throw new Error('failed to get self')
+    Object.assign(this, self)
   }
 
-  async sendMessage(channelId: string, content: Fragment, guildId?: string, options?: SendOptions): Promise<string[]> {
+  async sendMessage(channelId: string, content: Fragment, guildId?: string, options?: SendOptions) {
     return await new DiscourseMessenger(this, channelId, guildId, options).send(content)
+  }
+
+  async sendPrivateMessage(userId: string, content: Fragment, options?: SendOptions) {
+    return await this.sendMessage('private:' + userId, content, null, options)
+  }
+
+  async getMessage(channelId: string, messageId: string) {
+    const { data: post } = await this.internal.getPost(messageId)
+    return await adaptMessage(this, {
+      type: 'post',
+      subtype: 'post_created',
+      instance: this.instance,
+      post,
+    })
+  }
+  
+  async deleteMessage(channelId: string, messageId: string) {
+    await this.internal.deletePost(+messageId)
+  }
+
+  async getSelf() {
+    const user = await this.internal.getUserByUsername(this.selfId)
+    if (!user.ok) return null
+    return {
+      userId: user.data.user.id.toString(),
+      username: user.data.user.username,
+      avatar: this.endpoint + user.data.user.avatar_template.replace('{size}', '90')
+    }
+  }
+
+  async getUser(userId: string) {
+    const user = await this.internal.getUserByUserId(+userId)
+    if (!user.ok) return null
+    return {
+      userId: user.data.id.toString(),
+      username: user.data.username,
+      avatar: this.endpoint + user.data.avatar_template.replace('{size}', '90')
+    }
+  }
+
+  async getFriendList() {
+    return []
+  }
+
+  async getChannel(channelId: string, guildId?: string) {
+    const topic = await this.internal.getTopic(channelId)
+    if (!topic.ok) return null
+    return {
+      channelId,
+      channelName: topic.data.title,
+    }
   }
 }
 
