@@ -1,50 +1,51 @@
-import { Fetcher } from 'openapi-typescript-fetch'
+import { Quester } from 'koishi'
+import FormData from 'form-data'
 import { DiscourseBot } from './bot'
-import { paths } from './schema'
 
 export class Internal {
-  fetcher: ReturnType<typeof Fetcher.for<paths>>
+  http: Quester
   constructor(bot: DiscourseBot) {
-    this.fetcher = Fetcher.for<paths>()
-    this.fetcher.configure({
-      baseUrl: bot.endpoint,
-      init: {
-        headers: {
-          'Api-Key': bot.token,
-          'Api-Username': bot.selfId,
-        },
+    this.http = bot.ctx.http.extend({
+      ...bot.config,
+      headers: {
+        'Api-Username': bot.config.selfId,
+        'Api-Key': bot.config.token,
       },
     })
   }
 
-  async replyPost(topicId: number, raw: string) {
-    const fetch = this.fetcher.path('/posts.json').method('post').create()
-    return await fetch({ topic_id: topicId, raw })
+  async replyPost(topicId: number, raw: string, reply?: number) {
+    return await this.http.post('/posts.json', { topic_id: topicId, raw, reply_to_post_number: reply })
   }
 
   async getPost(id: string) {
-    const fetch = this.fetcher.path('/posts/{id}.json').method('get').create()
-    return await fetch({ id })
+    return await this.http.get(`/posts/${id}.json`)
   }
 
-  async deletePost(id: number) {
-    const fetch = this.fetcher.path('/posts/{id}.json').method('delete').create()
-    return await fetch({ id })
+  async deletePost(id: string) {
+    return await this.http.delete(`/posts/${id}.json`)
   }
 
   async getUserByUsername(username: string) {
-    const fetch = this.fetcher.path('/u/{username}.json').method('get').create()
-    return await fetch({ username })
+    return await this.http.get(`/u/${username}.json`)
   }
 
-  async getUserByUserId(id: number) {
-    const fetch = this.fetcher.path('/admin/users/{id}.json').method('get').create()
-    return await fetch({ id })
+  async getUserByUserId(id: string) {
+    return await this.http.get(`/admin/users/${id}.json`)
   }
 
   async getTopic(id: string) {
-    const fetch = this.fetcher.path('/t/{id}.json').method('get').create()
-    return fetch({ id })
+    return await this.http.get(`/t/${id}.json`)
+  }
+
+  async upload(buffer: ArrayBuffer) {
+    const form = new FormData()
+    form.append('type', 'composer')
+    form.append('synchronous', 'true')
+    form.append('file', Buffer.from(buffer), 'avatar.jpg')
+    return await this.http.post('/uploads.json', form, {
+      headers: form.getHeaders(),
+    })
   }
 }
 
@@ -66,8 +67,7 @@ export interface PostEvent {
   post_type?: number
   updated_at?: string
   reply_count?: number
-  // unknown type
-  // reply_to_post_number
+  reply_to_post_number?: number
   quote_count?: number
   incoming_link_count?: number
   reads?: number

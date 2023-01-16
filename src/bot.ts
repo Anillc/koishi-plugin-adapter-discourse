@@ -1,4 +1,4 @@
-import { Bot, Context, Fragment, Schema, SendOptions, Universal } from 'koishi'
+import { Bot, Context, Fragment, Quester, Schema, SendOptions, Universal } from 'koishi'
 import { HttpAdapter } from './http'
 import { DiscourseMessenger } from './message'
 import { Internal } from './types'
@@ -35,7 +35,7 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
   }
 
   async getMessage(channelId: string, messageId: string) {
-    const { data: post } = await this.internal.getPost(messageId)
+    const post = await this.internal.getPost(messageId)
     return await adaptMessage(this, {
       type: 'post',
       subtype: 'post_created',
@@ -45,26 +45,24 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
   }
   
   async deleteMessage(channelId: string, messageId: string) {
-    await this.internal.deletePost(+messageId)
+    await this.internal.deletePost(messageId)
   }
 
   async getSelf() {
     const user = await this.internal.getUserByUsername(this.selfId)
-    if (!user.ok) return null
     return {
-      userId: user.data.user.id.toString(),
-      username: user.data.user.username,
-      avatar: this.endpoint + user.data.user.avatar_template.replace('{size}', '90')
+      userId: user.user.id.toString(),
+      username: user.user.username,
+      avatar: this.endpoint + user.user.avatar_template.replace('{size}', '90')
     }
   }
 
   async getUser(userId: string) {
-    const user = await this.internal.getUserByUserId(+userId)
-    if (!user.ok) return null
+    const user = await this.internal.getUserByUserId(userId)
     return {
-      userId: user.data.id.toString(),
-      username: user.data.username,
-      avatar: this.endpoint + user.data.avatar_template.replace('{size}', '90')
+      userId: user.id.toString(),
+      username: user.username,
+      avatar: this.endpoint + user.avatar_template.replace('{size}', '90')
     }
   }
 
@@ -74,10 +72,9 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
 
   async getChannel(channelId: string, guildId?: string) {
     const topic = await this.internal.getTopic(channelId)
-    if (!topic.ok) return null
     return {
       channelId,
-      channelName: topic.data.title,
+      channelName: topic.title,
     }
   }
 }
@@ -96,6 +93,7 @@ export namespace DiscourseBot {
     endpoint: Schema.string().description('论坛的地址。').required(),
     instance: Schema.string().description('实例地址 (默认与 endpoint 相同)'),
     path: Schema.string().description('服务器监听的路径。').default('/discourse'),
+    ...Quester.Config.dict,
   })
 }
 

@@ -3,13 +3,16 @@ import { DiscourseBot } from './bot'
 
 export class DiscourseMessenger extends Messenger<DiscourseBot> {
   buffer = ''
+  reply: number
   async flush() {
     if (!this.buffer) return
     try {
       const session = this.bot.session()
       const topicId = +(this.guildId ? this.channelId : this.channelId.slice(8))
-      const result = await this.bot.internal.replyPost(topicId, this.buffer)
-      session.messageId = result.data.post_number.toString()
+      const result = await this.bot.internal.replyPost(topicId, this.buffer, this.reply)
+      session.messageId = result.post_number.toString()
+      this.buffer = ''
+      this.reply = null
       this.results.push(session)
     } catch (e) {
       this.errors.push(e)
@@ -54,12 +57,18 @@ export class DiscourseMessenger extends Messenger<DiscourseBot> {
       }
     } else if (type === 'sharp' && attrs.id) {
       this.buffer += ` #${attrs.id} `
-    } else if ((type === 'image' || type === 'video' || type === 'record' || type === 'file') && attrs.url) {
-      await this.flush()
-      const matrixType = type === 'record' ? 'audio' : type
-      // await this.sendMedia(attrs.url, matrixType)
+    } else if (type === 'image' && attrs.url) {
+      let url: string
+      if (attrs.url.match(/^https?:/)) {
+        url = attrs.url
+      } else {
+        const file = await this.bot.ctx.http.file(attrs.url)
+        const upload = await this.bot.internal.upload(file.data)
+        url = upload.url
+      }
+      this.buffer += `![](${url})`
     } else if (type === 'quote') {
-      // this.reply = await this.bot.getMessage(this.channelId, attrs.id)
+      this.reply = +attrs.id
     } else if (type === 'message') {
       await this.flush()
       await this.render(children, true)

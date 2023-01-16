@@ -1,7 +1,6 @@
 import { DiscourseBot } from './bot'
 import { Event, Internal } from './types'
 
-export * from './schema'
 export * from './types'
 
 declare module 'koishi' {
