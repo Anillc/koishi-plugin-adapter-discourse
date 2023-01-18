@@ -91,7 +91,7 @@ export namespace DiscourseBot {
     selfId: Schema.string().description('机器人的用户名。').required(),
     token: Schema.string().description('机器人的令牌。').required(),
     endpoint: Schema.string().description('论坛的地址。').required(),
-    instance: Schema.string().description('实例地址 (默认与 endpoint 相同)'),
+    instance: Schema.string().description('实例地址 (默认与 endpoint 相同)。'),
     path: Schema.string().description('服务器监听的路径。').default('/discourse'),
     ...Quester.Config.dict,
   })
