@@ -8,8 +8,9 @@ export class Internal {
     this.http = bot.ctx.http.extend({
       ...bot.config,
       headers: {
-        'Api-Username': bot.config.selfId,
-        'Api-Key': bot.config.token,
+        'Api-Username': bot.name,
+        'Api-Key': bot.token,
+        ...bot.config.headers,
       },
     })
   }

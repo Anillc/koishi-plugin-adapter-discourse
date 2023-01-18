@@ -1,10 +1,11 @@
-import { Bot, Context, Fragment, Quester, Schema, SendOptions, Universal } from 'koishi'
+import { Bot, Context, Fragment, omit, Quester, Schema, SendOptions, Universal } from 'koishi'
 import { HttpAdapter } from './http'
 import { DiscourseMessenger } from './message'
 import { Internal } from './types'
 import { adaptMessage } from './utils'
 
 export class DiscourseBot extends Bot<DiscourseBot.Config> {
+  name: string
   endpoint: string
   token: string
   path: string
@@ -12,6 +13,7 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
   internal: Internal
   constructor(ctx: Context, config: DiscourseBot.Config) {
     super(ctx, config)
+    this.name = config.name
     this.endpoint = config.endpoint
     this.token = config.token
     this.path = config.path
@@ -24,6 +26,7 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
     const self = await this.getSelf()
     if (!self) throw new Error('failed to get self')
     Object.assign(this, self)
+    this.selfId = this.userId
   }
 
   async sendMessage(channelId: string, content: Fragment, guildId?: string, options?: SendOptions) {
@@ -49,7 +52,7 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
   }
 
   async getSelf() {
-    const user = await this.internal.getUserByUsername(this.selfId)
+    const user = await this.internal.getUserByUsername(this.name)
     return {
       userId: user.user.id.toString(),
       username: user.user.username,
@@ -80,20 +83,20 @@ export class DiscourseBot extends Bot<DiscourseBot.Config> {
 }
 
 export namespace DiscourseBot {
-  export interface Config {
-    selfId: string
+  export interface Config extends Bot.Config, Quester.Config {
+    name: string
     token: string
     endpoint: string
     instance: string
     path: string
   }
   export const Config: Schema<Config> = Schema.object({
-    selfId: Schema.string().description('机器人的用户名。').required(),
+    name: Schema.string().description('机器人的用户名。').required(),
     token: Schema.string().description('机器人的令牌。').required(),
     endpoint: Schema.string().description('论坛的地址。').required(),
     instance: Schema.string().description('实例地址 (默认与 endpoint 相同)。'),
     path: Schema.string().description('服务器监听的路径。').default('/discourse'),
-    ...Quester.Config.dict,
+    ...omit(Quester.Config.dict, ['endpoint']),
   })
 }
 
