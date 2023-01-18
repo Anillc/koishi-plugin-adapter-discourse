@@ -52,7 +52,8 @@ export class DiscourseMessenger extends Messenger<DiscourseBot> {
       this.buffer += `</p>`
     } else if (type === 'at') {
       if (attrs.id) {
-        this.buffer += ` @${attrs.id} `
+        const user = await this.bot.internal.getUserByUserId(attrs.id)
+        this.buffer += `<a class="mention" href="/u/${user.username}">@${user.username}</a>`
       } else if (attrs.type === 'all') {
         this.buffer += ` @room `
       }

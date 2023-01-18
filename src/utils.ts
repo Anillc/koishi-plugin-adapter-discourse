@@ -36,27 +36,55 @@ export async function adaptMessage(bot: DiscourseBot, event: Event, result: Univ
     }, result.quote)
   }
   let content = ''
+  let index = 0
+  const names: string[] = []
   walk(parse(post.cooked, { setAttributeMap: true }), {
-    enter(node, parent, index) {
+    enter(node) {
       if (node.type === SyntaxKind.Tag) {
         switch (node.name) {
           case 'img':
             content += `<image url="${node.attributeMap.src.value.value}"/>`
+            break
+          case 'a':
+            const clazz = node.attributeMap?.class.value.value
+            const href = node.attributeMap?.href.value.value || '#'
+            if (clazz.includes('mention') && href.startsWith('/u/')) {
+              const username = href.slice(3)
+              names[index] = username
+              content += `<at id="@@__PLACEHOLDER_${index++}__@@" name="${username}">`
+            } else {
+              content += `<a href="${href}">`
+            }
             break
         }
       } else {
         content += node.value.replace('\n', '')
       }
     },
-    leave(node, parent, index) {
+    leave(node) {
       if (node.type === SyntaxKind.Text) return
       switch (node.name) {
         case 'p':
         case 'br':
           content += '\n'
+          break
+        case 'a':
+          const clazz = node.attributeMap?.class.value.value
+          const href = node.attributeMap?.href.value.value || '#'
+          if ((clazz.includes('mention') && href.startsWith('/u/'))) {
+            content += '</at>'
+          } else {
+            content += '</a>'
+          }
+          break
       }
     },
   })
+  await Promise.allSettled(names.map(async (name, i) => {
+    const user = await bot.internal.getUserByUsername(name)
+    names[i] = user.user.id.toString()
+  }))
+  content = content.replace(/@@__PLACEHOLDER_(\d+)__@@/g, (_, i) => names[+i])
   result.content = content
   // result.content is not a setter if result is a Universal.Message
   result.elements ??= segment.parse(result.content)
