@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-adapter-discourse",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Discourse adapter for Koishi",
   "main": "lib/index.js",
   "repository": "https://github.com/Anillc/koishi-plugin-adapter-discourse.git",
@@ -10,8 +10,8 @@
     "build": "tsc"
   },
   "peerDependencies": {
-    "koishi": "^4.11.2",
-    "@satorijs/satori": "^2.0.1"
+    "@satorijs/satori": "^2.0.1",
+    "koishi": "^4.11.2"
   },
   "devDependencies": {
     "@types/node": "^18.11.18",
